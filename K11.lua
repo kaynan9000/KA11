@@ -1,4 +1,4 @@
--- [[ KA HUB | ULTIMATE V8 - TELEPORT EDITION ]]
+-- [[ KA HUB | ULTIMATE V8 - ISLAND TELEPORT EDITION ]]
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- SERVIÇOS
@@ -28,6 +28,20 @@ local Config = {
 }
 
 local heartbeatConn
+
+-- TABELA DE CFRAMES (ILHAS)
+local IlhasCFrames = {
+    ["Ilha 1"] = CFrame.new(-235.188, 1217.643, 255.308),
+    ["Ilha 2"] = CFrame.new(-250.639, 2536.771, 391.219),
+    ["Ilha 3"] = CFrame.new(-88.396, 3496.337, 414.687),
+    ["Ilha 4"] = CFrame.new(-305.209, 4415.585, 354.863),
+    ["Ilha 6"] = CFrame.new(-258.912, 5828.998, 267.613),
+    ["Ilha 7"] = CFrame.new(-46.875, 7479.933, 149.203),
+    ["Ilha 8"] = CFrame.new(-257.616, 8978.347, 169.886),
+    ["Ilha 9"] = CFrame.new(-196.201, 10588.840, 39.336),
+    ["Ilha 10"] = CFrame.new(-232.813, 12310.998, 247.907),
+    ["Última Ilha"] = CFrame.new(-277.391, 14332.962, 455.127)
+}
 
 -- [[ MIRA FÍSICA V8 ]]
 local ScreenGui = Instance.new("ScreenGui")
@@ -59,7 +73,7 @@ createLine(UDim2.new(0, 2, 1, 0), UDim2.new(0.5, -1, 0, 0))
 -- [[ JANELA PRINCIPAL ]]
 local Window = Rayfield:CreateWindow({
    Name = "KA Hub | Ultimate V8",
-   LoadingTitle = "Injetando Teleport...",
+   LoadingTitle = "Injetando Teleport Ilhas...",
    LoadingSubtitle = "Sistema de Viagem Instantânea",
    ConfigurationSaving = { Enabled = false }
 })
@@ -90,8 +104,24 @@ MoveTab:CreateToggle({Name = "Fly (Voar)", CurrentValue = false, Callback = func
 MoveTab:CreateToggle({Name = "Speed Hack", CurrentValue = false, Callback = function(v) Config.SpeedHack = v end})
 MoveTab:CreateSlider({Name = "Velocidade", Range = {16, 250}, Increment = 1, CurrentValue = 16, Callback = function(v) Config.WalkSpeed = v end})
 
--- [[ NOVA ABA TELEPORT ]]
+-- [[ ABA TELEPORT ATUALIZADA ]]
 local TeleportTab = Window:CreateTab("Teleport", 4483362458)
+
+TeleportTab:CreateSection("Teleport para Ilhas")
+
+TeleportTab:CreateDropdown({
+   Name = "Escolher Ilha",
+   Options = {"Ilha 1", "Ilha 2", "Ilha 3", "Ilha 4", "Ilha 6", "Ilha 7", "Ilha 8", "Ilha 9", "Ilha 10", "Última Ilha"},
+   CurrentOption = "Ilha 1",
+   Callback = function(Option)
+       if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+           LocalPlayer.Character.HumanoidRootPart.CFrame = IlhasCFrames[Option]
+           Rayfield:Notify({Title = "Teleport", Content = "Indo para "..Option, Duration = 2})
+       end
+   end,
+})
+
+TeleportTab:CreateSection("Outros Teleports")
 
 TeleportTab:CreateToggle({
     Name = "Click TP (Ctrl + Clique)",
@@ -99,10 +129,8 @@ TeleportTab:CreateToggle({
     Callback = function(v) Config.ClickTP = v end,
 })
 
-TeleportTab:CreateSection("Teleportar para Jogador")
-
 local PlayerDropdown = TeleportTab:CreateDropdown({
-   Name = "Selecionar Jogador",
+   Name = "Ir até Jogador",
    Options = {"Atualizar Lista"},
    CurrentOption = "Atualizar Lista",
    Callback = function(Option)
@@ -110,21 +138,9 @@ local PlayerDropdown = TeleportTab:CreateDropdown({
        local targetPlayer = Players:FindFirstChild(Option)
        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
            LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, -3)
-           Rayfield:Notify({Title = "Teleport", Content = "Teleportado para: "..Option, Duration = 2})
        end
    end,
 })
-
--- Função para atualizar lista de jogadores
-task.spawn(function()
-    while task.wait(5) do
-        local pList = {"Atualizar Lista"}
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer then table.insert(pList, p.Name) end
-        end
-        PlayerDropdown:Refresh(pList)
-    end
-end)
 
 -- ABA COMBATE
 local CombatTab = Window:CreateTab("Combate", 4483362458)
@@ -138,16 +154,16 @@ CombatTab:CreateToggle({Name = "ESP Highlights", CurrentValue = false, Callback 
     end
 end})
 
--- [[ LÓGICA CLICK TP ]]
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and Config.ClickTP and input.UserInputType == Enum.UserInputType.MouseButton1 and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-        local mousePos = UserInputService:GetMouseLocation()
-        local ray = Camera:ViewportPointToRay(mousePos.X, mousePos.Y)
-        local raycastResult = workspace:Raycast(ray.Origin, ray.Direction * 1000)
-        
-        if raycastResult and LocalPlayer.Character then
-            LocalPlayer.Character:MoveTo(raycastResult.Position)
-        end
+-- [[ LÓGICA DE JUMP & CLICK TP ]]
+UserInputService.JumpRequest:Connect(function()
+    if Config.InfiniteJump and LocalPlayer.Character then LocalPlayer.Character.Humanoid:ChangeState("Jumping") end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if not gpe and Config.ClickTP and input.UserInputType == Enum.UserInputType.MouseButton1 and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        local ray = Camera:ViewportPointToRay(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+        local result = workspace:Raycast(ray.Origin, ray.Direction * 1000)
+        if result and LocalPlayer.Character then LocalPlayer.Character:MoveTo(result.Position) end
     end
 end)
 
@@ -170,13 +186,12 @@ RunService.Stepped:Connect(function()
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
 
     if hum and hrp then
-        if Config.SpeedHack then hum.WalkSpeed = Config.WalkSpeed else hum.WalkSpeed = 16 end
+        if Config.SpeedHack then hum.WalkSpeed = Config.WalkSpeed end
         if Config.Fly then
-            local moveDir = hum.MoveDirection
             local flyVel = Vector3.new(0,0,0)
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then flyVel = Vector3.new(0, Config.FlySpeed, 0)
             elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then flyVel = Vector3.new(0, -Config.FlySpeed, 0) end
-            hrp.Velocity = (moveDir * Config.FlySpeed) + flyVel
+            hrp.Velocity = (hum.MoveDirection * Config.FlySpeed) + flyVel
         end
     end
 
@@ -205,4 +220,4 @@ RunService.Stepped:Connect(function()
     end
 end)
 
-Rayfield:Notify({Title = "KA HUB V8", Content = "Aba Teleport Adicionada!", Duration = 5})
+Rayfield:Notify({Title = "KA HUB ILHAS", Content = "Lista de Ilhas Carregada!", Duration = 5})
